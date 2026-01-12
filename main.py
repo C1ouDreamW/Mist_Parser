@@ -53,7 +53,7 @@ SYSTEM_PROMPT = """
   {
     "type": "single_choice", // 题型：single_choice, multiple_choice, judge, fill, essay
     "content": "题干文本",
-    "options": ["A. 选项内容", "B. 选项内容"], // 选择题必填，其他题型为空数组
+    "options": ["选项内容", "选项内容"], // 选择题必填，其他题型为空数组，选项前不加A/B/C/D
     "answer": "A", // 多选则有多个答案，如 ["A", "B"]
   }
 ]
