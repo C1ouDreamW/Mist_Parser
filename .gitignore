@@ -2,4 +2,5 @@ input/*
 output/*
 origin/*
 processed/*
+input_large/*
 .env
