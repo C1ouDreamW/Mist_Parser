@@ -3,4 +3,6 @@ output/*
 origin/*
 processed/*
 input_large/*
+history/*
+answers/*
 .env
