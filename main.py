@@ -4,6 +4,8 @@ from markitdown import MarkItDown
 from openai import OpenAI
 from dotenv import load_dotenv
 import pypandoc
+from marker.convert import convert_single_pdf
+from marker.models import load_all_models
 
 print("=============================================")
 print("Mist_Parser 文档解析工具启动中...")
@@ -30,6 +32,15 @@ client = OpenAI(
     api_key=api_key,
     base_url=base_url
 )
+
+# 加载 Marker 模型（用于 PDF 解析）
+print(" # 加载 Marker 模型...")
+try:
+    model_lst = load_all_models()
+    print("   - Marker 模型加载成功")
+except Exception as e:
+    print(f"   ⚠️ Marker 模型加载失败: {e}")
+    model_lst = None
 
 # 确保输入输出目录存在
 print(" # 检查输入输出目录...")
@@ -134,6 +145,20 @@ def parse_document(file_path: str) -> str:
             markdown_content = result.text_content
             print(f"   - 解析完成，Markdown 长度: {len(markdown_content)} 字符")
             return markdown_content
+    elif file_ext == ".pdf":
+        # 使用 marker-pdf 解析 PDF 文件，转换为带有 LaTeX 公式的 Markdown
+        print("   - 检测到 .pdf，使用 Marker 转换为 Markdown...")
+        try:
+            if model_lst is None:
+                raise Exception("Marker 模型未加载成功")
+            # 调用 Marker 转换函数
+            result = convert_single_pdf(file_path, model_lst, max_pages=None)
+            markdown_content = result.markdown
+            print(f"   - 解析完成，Markdown 长度: {len(markdown_content)} 字符")
+            return markdown_content
+        except Exception as e:
+            print(f"   ⚠️ Marker 转换失败: {e}")
+            raise Exception(f"PDF 解析失败: {str(e)}")
     else:
         # 使用 markitdown 处理其他文档类型
         try:

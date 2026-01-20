@@ -2,6 +2,8 @@ import os
 import re
 from markitdown import MarkItDown
 import pypandoc
+from marker.convert import convert_single_pdf
+from marker.models import load_all_models
 
 print("=============================================")
 print("Mist_Parser 文档切分工具启动中...")
@@ -29,6 +31,15 @@ print(f"   - 切分后输出目录: {OUTPUT_DIR}")
 print(f"   - 切分目标大小: {CHUNK_SIZE} 字符/片段")
 print(f"   - 向前查找范围: {LOOKAHEAD_RANGE} 字符")
 print("   - 目录检查完成")
+
+# 加载 Marker 模型（用于 PDF 解析）
+print("2. 加载 Marker 模型...")
+try:
+    model_lst = load_all_models()
+    print("   - Marker 模型加载成功")
+except Exception as e:
+    print(f"   ⚠️ Marker 模型加载失败: {e}")
+    model_lst = None
 
 def parse_document(file_path: str) -> str:
     """解析文档并返回文本内容"""
@@ -68,6 +79,20 @@ def parse_document(file_path: str) -> str:
             markdown_content = result.text_content
             print(f"   - 解析完成，文本长度: {len(markdown_content)} 字符")
             return markdown_content
+    elif file_ext == ".pdf":
+        # 使用 marker-pdf 解析 PDF 文件，转换为带有 LaTeX 公式的 Markdown
+        print("   - 检测到 .pdf，使用 Marker 转换为 Markdown...")
+        try:
+            if model_lst is None:
+                raise Exception("Marker 模型未加载成功")
+            # 调用 Marker 转换函数
+            result = convert_single_pdf(file_path, model_lst, max_pages=None)
+            markdown_content = result.markdown
+            print(f"   - 解析完成，文本长度: {len(markdown_content)} 字符")
+            return markdown_content
+        except Exception as e:
+            print(f"   ⚠️ Marker 转换失败: {e}")
+            raise Exception(f"PDF 解析失败: {str(e)}")
     else:
         # 使用 markitdown 处理其他文档类型
         try:

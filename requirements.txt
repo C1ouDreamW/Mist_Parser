@@ -2,3 +2,4 @@ markitdown[docx]
 openai
 python-dotenv
 pypandoc_binary
+marker-pdf
