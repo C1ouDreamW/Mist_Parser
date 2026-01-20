@@ -1,6 +1,7 @@
 import os
 import re
 from markitdown import MarkItDown
+import pypandoc
 
 print("=============================================")
 print("Mist_Parser 文档切分工具启动中...")
@@ -45,6 +46,28 @@ def parse_document(file_path: str) -> str:
     elif file_ext == ".doc":
         # .doc 文件可能不被 markitdown 完全支持
         raise Exception("不支持的文件格式: .doc (旧版 Word 文档)。请将文件另存为 .docx 格式后重试。")
+    elif file_ext == ".docx":
+        # 使用 pypandoc 解析 docx 文件，保留公式为 LaTeX
+        print("   - 检测到 .docx，使用 Pandoc 转换以保留公式...")
+        try:
+            # 使用 Pandoc 将 docx 转为 markdown，保留公式为 LaTeX
+            output = pypandoc.convert_file(
+                file_path, 
+                'markdown', 
+                format='docx', 
+                extra_args=['--wrap=none']
+            )
+            print(f"   - 解析完成，文本长度: {len(output)} 字符")
+            return output
+        except Exception as e:
+            print(f"   ⚠️ Pandoc 转换失败，尝试降级使用 MarkItDown: {e}")
+            # 失败则使用原来的逻辑兜底
+            print("   - 降级使用 markitdown 解析...")
+            md = MarkItDown()
+            result = md.convert(file_path)
+            markdown_content = result.text_content
+            print(f"   - 解析完成，文本长度: {len(markdown_content)} 字符")
+            return markdown_content
     else:
         # 使用 markitdown 处理其他文档类型
         try:

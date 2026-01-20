@@ -3,6 +3,7 @@ import json
 from markitdown import MarkItDown
 from openai import OpenAI
 from dotenv import load_dotenv
+import pypandoc
 
 print("=============================================")
 print("Mist_Parser 文档解析工具启动中...")
@@ -90,6 +91,7 @@ SYSTEM_PROMPT = """
 ]
 
 要求：
+0.对于 LaTeX 公式中的反斜杠，必须使用双反斜杠转义（例如输出 "\\pi" 而不是 "\pi"），否则 JSON 解析会失败。
 1. 只输出纯 JSON 字符串，不要包含任何 Markdown 标记（如 ```json）
 2. 确保 JSON 格式合法
 3. 正确识别题型并提取题干、选项和答案
@@ -110,6 +112,28 @@ def parse_document(file_path: str) -> str:
             content = f.read()
         print(f"   - 解析完成，文本长度: {len(content)} 字符")
         return content
+    elif file_ext == ".docx":
+        # 使用 pypandoc 解析 docx 文件，保留公式为 LaTeX
+        print("   - 检测到 .docx，使用 Pandoc 转换以保留公式...")
+        try:
+            # 使用 Pandoc 将 docx 转为 markdown，保留公式为 LaTeX
+            output = pypandoc.convert_file(
+                file_path, 
+                'markdown', 
+                format='docx', 
+                extra_args=['--wrap=none']
+            )
+            print(f"   - 解析完成，Markdown 长度: {len(output)} 字符")
+            return output
+        except Exception as e:
+            print(f"   ⚠️ Pandoc 转换失败，尝试降级使用 MarkItDown: {e}")
+            # 失败则使用原来的逻辑兜底
+            print("   - 降级使用 markitdown 解析...")
+            md = MarkItDown()
+            result = md.convert(file_path)
+            markdown_content = result.text_content
+            print(f"   - 解析完成，Markdown 长度: {len(markdown_content)} 字符")
+            return markdown_content
     else:
         # 使用 markitdown 处理其他文档类型
         try:
@@ -136,6 +160,12 @@ def process_file(file_path):
         print(f"   ❌ 错误信息: {str(e)}")
         return False
 
+    # # 测试
+    # # 直接将解析后的content写入新的md文件
+    # with open("test.md", "w", encoding="utf-8") as f:
+    #     f.write(content)
+    # return True
+    
     # 调用 AI API
     try:
         print("   - 步骤 2: 调用大模型 API 处理内容...")
