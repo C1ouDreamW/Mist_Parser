@@ -2,22 +2,18 @@ import os
 import re
 from markitdown import MarkItDown
 import pypandoc
-from marker.convert import convert_single_pdf
-from marker.models import load_all_models
 
 print("=============================================")
 print("Mist_Parser 文档切分工具启动中...")
 print("=============================================")
 
 # 目录设置
-INPUT_LARGE_DIR = "input_large"  # 存放原始大文件的目录
-OUTPUT_DIR = "input"  # 存放切分后文件的目录（供主程序读取）
+INPUT_LARGE_DIR = "data/input_large"
+OUTPUT_DIR = "data/input"
 
-# 常量设置
-CHUNK_SIZE = 2500  # 每个切分片段的目标大小（字符数）
+CHUNK_SIZE = 2500  # 每个切分片段的目标字符数
 LOOKAHEAD_RANGE = 500  # 向前查找题号的范围
 
-# 正则表达式模式：用于识别题目的开始
 # 匹配：\n1. 或 \n10、 或 \n 2. 或 \n一、 等格式
 QUESTION_PATTERN = r'\n\s*(\d+|[一二三四五六七八九十]+)[\.、．\s]'
 
@@ -31,15 +27,6 @@ print(f"   - 切分后输出目录: {OUTPUT_DIR}")
 print(f"   - 切分目标大小: {CHUNK_SIZE} 字符/片段")
 print(f"   - 向前查找范围: {LOOKAHEAD_RANGE} 字符")
 print("   - 目录检查完成")
-
-# 加载 Marker 模型（用于 PDF 解析）
-print("2. 加载 Marker 模型...")
-try:
-    model_lst = load_all_models()
-    print("   - Marker 模型加载成功")
-except Exception as e:
-    print(f"   ⚠️ Marker 模型加载失败: {e}")
-    model_lst = None
 
 def parse_document(file_path: str) -> str:
     """解析文档并返回文本内容"""
@@ -55,13 +42,11 @@ def parse_document(file_path: str) -> str:
         print(f"   - 解析完成，文本长度: {len(content)} 字符")
         return content
     elif file_ext == ".doc":
-        # .doc 文件可能不被 markitdown 完全支持
         raise Exception("不支持的文件格式: .doc (旧版 Word 文档)。请将文件另存为 .docx 格式后重试。")
     elif file_ext == ".docx":
-        # 使用 pypandoc 解析 docx 文件，保留公式为 LaTeX
         print("   - 检测到 .docx，使用 Pandoc 转换以保留公式...")
         try:
-            # 使用 Pandoc 将 docx 转为 markdown，保留公式为 LaTeX
+            # 使用 Pandoc 将 docx 转为 markdown
             output = pypandoc.convert_file(
                 file_path, 
                 'markdown', 
@@ -72,29 +57,20 @@ def parse_document(file_path: str) -> str:
             return output
         except Exception as e:
             print(f"   ⚠️ Pandoc 转换失败，尝试降级使用 MarkItDown: {e}")
-            # 失败则使用原来的逻辑兜底
             print("   - 降级使用 markitdown 解析...")
             md = MarkItDown()
             result = md.convert(file_path)
             markdown_content = result.text_content
             print(f"   - 解析完成，文本长度: {len(markdown_content)} 字符")
             return markdown_content
-    elif file_ext == ".pdf":
-        # 使用 marker-pdf 解析 PDF 文件，转换为带有 LaTeX 公式的 Markdown
-        print("   - 检测到 .pdf，使用 Marker 转换为 Markdown...")
-        try:
-            if model_lst is None:
-                raise Exception("Marker 模型未加载成功")
-            # 调用 Marker 转换函数
-            result = convert_single_pdf(file_path, model_lst, max_pages=None)
-            markdown_content = result.markdown
-            print(f"   - 解析完成，文本长度: {len(markdown_content)} 字符")
-            return markdown_content
-        except Exception as e:
-            print(f"   ⚠️ Marker 转换失败: {e}")
-            raise Exception(f"PDF 解析失败: {str(e)}")
+
     else:
         # 使用 markitdown 处理其他文档类型
+        print(f"   - 检测到未被支持的类型 {file_ext}，是否强制使用 markitdown 解析？(y/n)")
+        user_input = input().strip().lower()
+        if user_input != 'y':
+            raise Exception(f"不支持的文件格式: {file_ext}。请将文件转换为 .txt, .docx 格式后重试。")
+        
         try:
             print("   - 使用 markitdown 解析...")
             md = MarkItDown()
@@ -266,13 +242,13 @@ def process_file(file_path: str):
 
 def main():
     """主函数"""
-    print("\n3. 开始扫描 input_large/ 目录...")
+    print(f"\n3. 开始扫描 {INPUT_LARGE_DIR}/ 目录...")
     
     # 获取 input_large 目录中的文件
     files = [f for f in os.listdir(INPUT_LARGE_DIR) if os.path.isfile(os.path.join(INPUT_LARGE_DIR, f))]
     
     if not files:
-        print("   ❌ input_large/ 目录中没有文件，请将待处理的大文件放入该目录")
+        print(f"   ❌ {INPUT_LARGE_DIR}/ 目录中没有文件，请将待处理的大文件放入该目录")
         print("=============================================")
         return
     

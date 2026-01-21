@@ -1,8 +1,57 @@
-input/*
-output/*
-origin/*
-processed/*
-input_large/*
-history/*
-answers/*
+# Project directories
+data/input/*
+data/output/*
+data/origin/*
+data/processed/*
+data/input_large/*
+data/history/*
+data/answers/*
+data/temp/*
+data/intermediate/*
+tests/*
+temp/*
+docs/*
+
+# Environment variables
 .env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+environment/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+coverage.xml
+pytest.xml
+
+# Build
+build/
+dist/
+*.egg-info/

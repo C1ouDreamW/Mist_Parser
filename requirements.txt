@@ -2,4 +2,6 @@ markitdown[docx]
 openai
 python-dotenv
 pypandoc_binary
-marker-pdf
+pdf2image
+pillow
+dashscope
